@@ -4,22 +4,20 @@
 #include <time.h>
 
 #define SQUARE_SIZE 50
-#define NUMBER_OF_SQUARES 20
 #define MAX_SPEED 3
+#define MAX_LEVEL 10
+#define SQUARES_PER_LEVEL 10
+#define MAX_SQUARES (MAX_LEVEL * SQUARES_PER_LEVEL)
 
 const int scX = 1000;
 const int scY = 1000;
 int speed = 5;
 
-void IntToString(int value, char* buffer, int bufferSize) {
-    snprintf(buffer, bufferSize, "%d", value);
-}
+Vector2 squares[MAX_SQUARES];
+Vector2 velocities[MAX_SQUARES];
 
-Vector2 squares[NUMBER_OF_SQUARES];
-Vector2 velocities[NUMBER_OF_SQUARES];
-
-void InitSquares(void) {
-    for (int i = 0; i < NUMBER_OF_SQUARES; i++) {
+void InitSquares(int count) {
+    for (int i = 0; i < count; i++) {
         squares[i].x = rand() % (GetScreenWidth() - SQUARE_SIZE);
         squares[i].y = rand() % (GetScreenHeight() - SQUARE_SIZE);
 
@@ -43,6 +41,12 @@ int main() {
     bool gameStarted = false;
     bool gameOver = false;
 
+    // Level and squares count
+    int currentLevel = 2; // default level (2 -> 20 squares). Change as desired.
+    if (currentLevel < 1) currentLevel = 1;
+    if (currentLevel > MAX_LEVEL) currentLevel = MAX_LEVEL;
+    int squaresCount = currentLevel * SQUARES_PER_LEVEL;
+
     // Score/time
     int score = 0;
     double lastScoreTime = 0.0; // using GetTime()
@@ -52,14 +56,29 @@ int main() {
     Vector2 playerPos = { scX / 2.0f, scY / 2.0f };
     float playerRadius = 10.0f;
 
-    // Initialize squares
-    InitSquares();
+    // NOTE: Do NOT initialize squares here. They will be initialized only when the game actually starts.
+    // This ensures no squares are spawned or shown on the level (start) screen.
 
     while (!WindowShouldClose()) {
         // Input handling for screens
         if (!gameStarted) {
+            // Level selector on the start screen (no squares are initialized or drawn here)
+            if (IsKeyPressed(KEY_RIGHT)) {
+                if (currentLevel < MAX_LEVEL) {
+                    currentLevel++;
+                    squaresCount = currentLevel * SQUARES_PER_LEVEL;
+                    // DO NOT call InitSquares here (no preview on level screen)
+                }
+            }
+            if (IsKeyPressed(KEY_LEFT)) {
+                if (currentLevel > 1) {
+                    currentLevel--;
+                    squaresCount = currentLevel * SQUARES_PER_LEVEL;
+                    // DO NOT call InitSquares here (no preview on level screen)
+                }
+            }
             if (IsKeyPressed(KEY_ENTER) || IsKeyPressed(KEY_KP_ENTER) || IsKeyPressed(KEY_SPACE)) {
-                // Start the game
+                // Start the game: initialize squares for the chosen level
                 gameStarted = true;
                 gameOver = false;
                 score = 0;
@@ -67,19 +86,19 @@ int main() {
                 // Reset player to center
                 playerPos.x = scX / 2.0f;
                 playerPos.y = scY / 2.0f;
-                // re-init squares for fresh start
-                InitSquares();
+                // Initialize squares for the chosen level (actually spawn them now)
+                squaresCount = currentLevel * SQUARES_PER_LEVEL;
+                InitSquares(squaresCount);
             }
             if (IsKeyPressed(KEY_ESCAPE)) break;
         } else if (gameOver) {
             // On game over, allow restart or quit
             if (IsKeyPressed(KEY_R)) {
-                // Restart: go back to start screen (or you can set gameStarted=true to restart immediately)
+                // Return to start screen (keeps last selected level)
+                // Do NOT initialize squares here so the level screen has no squares.
                 gameStarted = false;
                 gameOver = false;
                 score = 0;
-                // re-init squares
-                InitSquares();
             }
             if (IsKeyPressed(KEY_ESCAPE)) break;
         } else {
@@ -105,11 +124,11 @@ int main() {
             }
 
             // Update square positions and check for wall collisions
-            for (int i = 0; i < NUMBER_OF_SQUARES; i++) {
+            for (int i = 0; i < squaresCount; i++) {
                 squares[i].x += velocities[i].x;
                 squares[i].y += velocities[i].y;
 
-                // Bounce off walls
+                // Bounce off walls (clamp position and reverse)
                 if (squares[i].x <= 0) {
                     squares[i].x = 0;
                     velocities[i].x *= -1;
@@ -130,7 +149,7 @@ int main() {
 
             // Collision detection
             bool collisionDetected = false;
-            for (int i = 0; i < NUMBER_OF_SQUARES; i++) {
+            for (int i = 0; i < squaresCount; i++) {
                 Rectangle square = { squares[i].x, squares[i].y, SQUARE_SIZE, SQUARE_SIZE };
                 if (CheckCollisionCircleRec(playerPos, playerRadius, square)) {
                     collisionDetected = true;
@@ -149,20 +168,33 @@ int main() {
         ClearBackground(BLACK);
 
         if (!gameStarted) {
-            // Start screen
+            // Start screen with level selector (no squares shown)
             const char *title = "DODGE THE SQUARES";
-            const char *instr1 = "Press ENTER or SPACE to start";
-            const char *instr2 = "Arrow keys to move. Press ESC to quit.";
-            const char *instr3 = "Press R after game over to return here.";
             int titleFontSize = 40;
             int infoFontSize = 20;
-            DrawText(title, scX/2 - MeasureText(title, titleFontSize)/2, scY/3, titleFontSize, GOLD);
-            DrawText(instr1, scX/2 - MeasureText(instr1, infoFontSize)/2, scY/3 + 80, infoFontSize, LIGHTGRAY);
-            DrawText(instr2, scX/2 - MeasureText(instr2, infoFontSize)/2, scY/3 + 110, infoFontSize, LIGHTGRAY);
-            DrawText(instr3, scX/2 - MeasureText(instr3, infoFontSize)/2, scY/3 + 140, infoFontSize, LIGHTGRAY);
+
+            DrawText(title, scX/2 - MeasureText(title, titleFontSize)/2, scY/6, titleFontSize, GOLD);
+
+            // Level display
+            char levelText[64];
+            snprintf(levelText, sizeof(levelText), "Level: %d   (Squares: %d)", currentLevel, currentLevel * SQUARES_PER_LEVEL);
+            DrawText(levelText, scX/2 - MeasureText(levelText, infoFontSize)/2, scY/6 + 80, infoFontSize, LIGHTGRAY);
+
+            const char *instr1 = "Use LEFT / RIGHT to change level";
+            const char *instr2 = "Press ENTER or SPACE to start";
+            const char *instr3 = "Arrow keys to move. Press ESC to quit.";
+            const char *instr4 = "Press R during Game Over to return here.";
+
+            DrawText(instr1, scX/2 - MeasureText(instr1, infoFontSize)/2, scY/6 + 110, infoFontSize, LIGHTGRAY);
+            DrawText(instr2, scX/2 - MeasureText(instr2, infoFontSize)/2, scY/6 + 140, infoFontSize, LIGHTGRAY);
+            DrawText(instr3, scX/2 - MeasureText(instr3, infoFontSize)/2, scY/6 + 170, infoFontSize, LIGHTGRAY);
+            DrawText(instr4, scX/2 - MeasureText(instr4, infoFontSize)/2, scY/6 + 200, infoFontSize, LIGHTGRAY);
+
+            // Draw player in center (so user can see starting position)
+            DrawCircleV(playerPos, playerRadius, GREEN);
         } else if (gameOver) {
-            // Draw squares frozen
-            for (int i = 0; i < NUMBER_OF_SQUARES; i++) {
+            // Draw squares frozen (from the game that just ended)
+            for (int i = 0; i < squaresCount; i++) {
                 DrawRectangleV(squares[i], (Vector2){SQUARE_SIZE, SQUARE_SIZE}, BLUE);
             }
             // Draw player as red (since collision happened)
@@ -173,12 +205,12 @@ int main() {
             snprintf(scoreText, sizeof(scoreText), "GAME OVER! Final score: %d", finalScore);
             DrawText(scoreText, scX/2 - MeasureText(scoreText, 24)/2, scY/3, 24, RED);
 
-            const char *restartText = "Press R to restart (go to start screen) or ESC to quit.";
+            const char *restartText = "Press R to return to start screen (change level) or ESC to quit.";
             DrawText(restartText, scX/2 - MeasureText(restartText, 20)/2, scY/3 + 50, 20, LIGHTGRAY);
         } else {
             // Normal gameplay draw
             // Draw squares
-            for (int i = 0; i < NUMBER_OF_SQUARES; i++) {
+            for (int i = 0; i < squaresCount; i++) {
                 DrawRectangleV(squares[i], (Vector2){SQUARE_SIZE, SQUARE_SIZE}, BLUE);
             }
 
@@ -187,8 +219,13 @@ int main() {
 
             // Draw score (current, not yet multiplied)
             char scoreText[32];
-            IntToString(score, scoreText, sizeof(scoreText));
+            snprintf(scoreText, sizeof(scoreText), "Score: %d", score);
             DrawText(scoreText, 10, 10, 20, WHITE);
+
+            // Draw level in corner during play
+            char levelHud[32];
+            snprintf(levelHud, sizeof(levelHud), "Level: %d", currentLevel);
+            DrawText(levelHud, scX - MeasureText(levelHud, 20) - 10, 10, 20, LIGHTGRAY);
         }
 
         EndDrawing();
