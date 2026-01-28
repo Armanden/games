@@ -1,0 +1,113 @@
+#include <raylib.h>
+
+//map
+//a
+char a1 = {};
+char a2 = {};
+char a3 = {};
+char a4 = {};
+char a5 = {};
+char a6 = {};
+char a7 = {};
+char a8 = {};
+char a9 = {};
+//b
+char a1 = {};
+char a2 = {};
+char a3 = {};
+char a4 = {};
+char a5 = {};
+char a6 = {};
+char a7 = {};
+char a8 = {};
+char a9 = {};
+//c
+char a1 = {};
+char a2 = {};
+char a3 = {};
+char a4 = {};
+char a5 = {};
+char a6 = {};
+char a7 = {};
+char a8 = {};
+char a9 = {};
+//d
+char a1 = {};
+char a2 = {};
+char a3 = {};
+char a4 = {};
+char a5 = {};
+char a6 = {};
+char a7 = {};
+char a8 = {};
+char a9 = {};
+//e
+char a1 = {};
+char a2 = {};
+char a3 = {};
+char a4 = {};
+char a5 = {};
+char a6 = {};
+char a7 = {};
+char a8 = {};
+char a9 = {};
+
+//e
+char a1 = {};
+char a2 = {};
+char a3 = {};
+char a4 = {};
+char a5 = {};
+char a6 = {};
+char a7 = {};
+char a8 = {};
+char a9 = {};
+
+//f
+char a1 = {};
+char a2 = {};
+char a3 = {};
+char a4 = {};
+char a5 = {};
+char a6 = {};
+char a7 = {};
+char a8 = {};
+char a9 = {};
+
+
+//g
+char a1 = {};
+char a2 = {};
+char a3 = {};
+char a4 = {};
+char a5 = {};
+char a6 = {};
+char a7 = {};
+char a8 = {};
+char a9 = {};
+
+
+//h
+char a1 = {};
+char a2 = {};
+char a3 = {};
+char a4 = {};
+char a5 = {};
+char a6 = {};
+char a7 = {};
+char a8 = {};
+char a9 = {};
+
+//i
+char a1 = {};
+char a2 = {};
+char a3 = {};
+char a4 = {};
+char a5 = {};
+char a6 = {};
+char a7 = {};
+char a8 = {};
+char a9 = {};
+
+
+

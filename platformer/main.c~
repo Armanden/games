@@ -1,0 +1,18 @@
+#include <stdio.h>
+#include <raylib.h>
+
+main() {
+
+
+  while(!ShouldWindowClose()){
+
+    InitWindow(1200, 900, "Platformer");
+
+
+    BeginDrawing();
+    EndDrawing();
+  }
+
+  CloseWindow();
+
+}

@@ -1,0 +1,20 @@
+#include "raylib.h"
+
+int main(void) {
+
+  InitWindow(300,300,"Sudoku");
+  SetTargetFPS(300);
+
+  while(!WindowShouldClose()){
+
+
+    BeginDrawing();
+    EndDrawing();
+
+
+  }
+
+  CloseWindow();
+  return 0;
+
+}
