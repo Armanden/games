@@ -1,0 +1,18 @@
+#include <stdio.h>
+#include <raylib.h>
+
+int main () {
+
+  while(!WindowShouldClose()){
+
+    InitWindow(1200,900,"Stupid Maze");
+    SetTargetFPS(60);
+    BeginDrawing();
+    ClearBackground(BLACK);
+    DrawText("hello",10,10,10,BLACK);
+    
+    EndDrawing();
+  }
+  CloseWindow();
+  return 0;
+}

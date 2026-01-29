@@ -52,7 +52,7 @@ public:
                 py = plat.y + plat.height + radius;
             }
             else if (nx < -0.5f) {  // Left side collision
-                px = plat.x - radius;            
+                px = plat.x - radius;
             }
             else if (nx > 0.5f) {  // Right side collision
                 px = plat.x + plat.width + radius;
