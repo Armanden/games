@@ -33,7 +33,7 @@ void InitSquares(int count) {
 int main() {
     // Initialize Raylib
     InitWindow(scX, scY, "Dodge the Squares");
-    SetTargetFPS(60);
+    SetTargetFPS(500);
 
     srand((unsigned)time(NULL));
 

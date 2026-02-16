@@ -40,7 +40,8 @@ public:
             // Push circle out along normal by penetration amount
             px += nx * penetration;
             py += ny * penetration;
-
+	    onGround = true;
+	    
             // Interpret normal to determine contact type
             if (ny < -0.5f) {  // Landed on top of platform
                 vy = 0.0f;
