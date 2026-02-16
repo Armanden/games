@@ -1,0 +1,367 @@
+#include "raylib.h"
+#include <stdlib.h>
+#include <time.h>
+#include <string.h>
+#include <stdio.h>
+
+const int screenW = 540;
+const int screenH = 600;
+
+const int gridSize = 9;
+const float cellSize = 60.0f;
+
+typedef struct {
+    int value;      // Current value (0 = empty)
+    int original;   // Original puzzle value (can't be changed)
+} Cell;
+
+typedef struct {
+    Cell grid[9][9];
+    int selectedRow;
+    int selectedCol;
+    int isWon;
+    int mistakes;
+} GameState;
+
+// Forward declarations
+void initializeGame(GameState *game);
+int isValidPlacement(GameState *game, int row, int col, int num);
+int isBoardComplete(GameState *game);
+void generatePuzzle(GameState *game);
+int solveSudoku(int grid[9][9], int row, int col);
+void clearBoard(int grid[9][9]);
+void removeNumbers(int grid[9][9], int difficulty);
+void drawGame(GameState *game);
+void handleInput(GameState *game);
+
+// Check if a number is valid at a position
+int isValidPlacement(GameState *game, int row, int col, int num) {
+    // Check row
+    for (int i = 0; i < 9; i++) {
+        if (game->grid[row][i].value == num) return 0;
+    }
+
+    // Check column
+    for (int i = 0; i < 9; i++) {
+        if (game->grid[i][col].value == num) return 0;
+    }
+
+    // Check 3x3 box
+    int boxRow = (row / 3) * 3;
+    int boxCol = (col / 3) * 3;
+    for (int i = boxRow; i < boxRow + 3; i++) {
+        for (int j = boxCol; j < boxCol + 3; j++) {
+            if (game->grid[i][j].value == num) return 0;
+        }
+    }
+
+    return 1;
+}
+
+// Clear the board
+void clearBoard(int grid[9][9]) {
+    for (int i = 0; i < 9; i++) {
+        for (int j = 0; j < 9; j++) {
+            grid[i][j] = 0;
+        }
+    }
+}
+
+// Solve sudoku using backtracking
+int solveSudoku(int grid[9][9], int row, int col) {
+    if (row == 9) return 1;
+
+    int nextRow = row;
+    int nextCol = col + 1;
+    if (nextCol == 9) {
+        nextRow++;
+        nextCol = 0;
+    }
+
+    if (grid[row][col] != 0) {
+        return solveSudoku(grid, nextRow, nextCol);
+    }
+
+    for (int num = 1; num <= 9; num++) {
+        // Check if valid
+        int valid = 1;
+
+        // Check row
+        for (int i = 0; i < 9; i++) {
+            if (grid[row][i] == num) {
+                valid = 0;
+                break;
+            }
+        }
+
+        // Check column
+        if (valid) {
+            for (int i = 0; i < 9; i++) {
+                if (grid[i][col] == num) {
+                    valid = 0;
+                    break;
+                }
+            }
+        }
+
+        // Check 3x3 box
+        if (valid) {
+            int boxRow = (row / 3) * 3;
+            int boxCol = (col / 3) * 3;
+            for (int i = boxRow; i < boxRow + 3; i++) {
+                for (int j = boxCol; j < boxCol + 3; j++) {
+                    if (grid[i][j] == num) {
+                        valid = 0;
+                        break;
+                    }
+                }
+            }
+        }
+
+        if (valid) {
+            grid[row][col] = num;
+            if (solveSudoku(grid, nextRow, nextCol)) {
+                return 1;
+            }
+            grid[row][col] = 0;
+        }
+    }
+
+    return 0;
+}
+
+// Remove numbers to create puzzle
+void removeNumbers(int grid[9][9], int difficulty) {
+    int cellsToRemove = 40 + (difficulty * 10);
+    int removed = 0;
+
+    while (removed < cellsToRemove) {
+        int row = rand() % 9;
+        int col = rand() % 9;
+
+        if (grid[row][col] != 0) {
+            grid[row][col] = 0;
+            removed++;
+        }
+    }
+}
+
+// Generate a new sudoku puzzle
+void generatePuzzle(GameState *game) {
+    int tempGrid[9][9];
+    clearBoard((int(*)[9])tempGrid);
+
+    // Fill diagonal 3x3 boxes with random numbers
+    for (int box = 0; box < 3; box++) {
+        int nums[9] = {1, 2, 3, 4, 5, 6, 7, 8, 9};
+        // Fisher-Yates shuffle
+        for (int i = 8; i > 0; i--) {
+            int j = rand() % (i + 1);
+            int temp = nums[i];
+            nums[i] = nums[j];
+            nums[j] = temp;
+        }
+
+        int idx = 0;
+        for (int i = 0; i < 3; i++) {
+            for (int j = 0; j < 3; j++) {
+                tempGrid[box * 3 + i][box * 3 + j] = nums[idx++];
+            }
+        }
+    }
+
+    // Solve the puzzle
+    solveSudoku((int(*)[9])tempGrid, 0, 0);
+
+    // Copy to game grid
+    for (int i = 0; i < 9; i++) {
+        for (int j = 0; j < 9; j++) {
+            game->grid[i][j].value = tempGrid[i][j];
+            game->grid[i][j].original = tempGrid[i][j];
+        }
+    }
+
+    // Remove numbers (medium difficulty)
+    removeNumbers((int(*)[9])tempGrid, 1);
+
+    for (int i = 0; i < 9; i++) {
+        for (int j = 0; j < 9; j++) {
+            game->grid[i][j].value = tempGrid[i][j];
+            if (tempGrid[i][j] != 0) {
+                game->grid[i][j].original = tempGrid[i][j];
+            } else {
+                game->grid[i][j].original = 0;
+            }
+        }
+    }
+}
+
+// Initialize game
+void initializeGame(GameState *game) {
+    game->selectedRow = -1;
+    game->selectedCol = -1;
+    game->isWon = 0;
+    game->mistakes = 0;
+
+    generatePuzzle(game);
+}
+
+// Check if board is complete
+int isBoardComplete(GameState *game) {
+    for (int i = 0; i < 9; i++) {
+        for (int j = 0; j < 9; j++) {
+            if (game->grid[i][j].value == 0) return 0;
+        }
+    }
+    return 1;
+}
+
+// Draw the game
+void drawGame(GameState *game) {
+    BeginDrawing();
+    ClearBackground(WHITE);
+
+    // Draw grid cells
+    for (int row = 0; row < 9; row++) {
+        for (int col = 0; col < 9; col++) {
+            float x = col * cellSize;
+            float y = row * cellSize;
+
+            Color cellColor = WHITE;
+
+            // Highlight selected cell
+            if (game->selectedRow == row && game->selectedCol == col) {
+                cellColor = (Color){200, 220, 255, 255}; // Light blue
+            }
+            // Highlight row and column of selected cell
+            else if (game->selectedRow == row || game->selectedCol == col) {
+                cellColor = (Color){240, 240, 240, 255}; // Light gray
+            }
+
+            DrawRectangle((int)x, (int)y, (int)cellSize, (int)cellSize, cellColor);
+            DrawRectangleLines((int)x, (int)y, (int)cellSize, (int)cellSize, BLACK);
+
+            // Draw cell value
+            if (game->grid[row][col].value > 0) {
+                Color textColor = BLACK;
+                // Different color for original numbers
+                if (game->grid[row][col].original > 0) {
+                    textColor = DARKGRAY;
+                }
+
+                DrawText(TextFormat("%d", game->grid[row][col].value),
+                         (int)x + (int)cellSize / 2 - 5,
+                         (int)y + (int)cellSize / 2 - 10,
+                         20, textColor);
+            }
+        }
+    }
+
+    // Draw thick lines for 3x3 boxes
+    for (int i = 1; i < 3; i++) {
+        // Vertical lines
+        DrawLineEx((Vector2){i * cellSize * 3, 0},
+                   (Vector2){i * cellSize * 3, screenH - 60},
+                   2, BLACK);
+        // Horizontal lines
+        DrawLineEx((Vector2){0, i * cellSize * 3},
+                   (Vector2){screenW, i * cellSize * 3},
+                   2, BLACK);
+    }
+
+    // Draw UI at bottom
+    DrawRectangle(0, 540, screenW, 60, DARKGRAY);
+    DrawText("1-9: Enter | DEL: Clear | R: Reset | W: New", 10, 550, 15, WHITE);
+
+    if (game->isWon) {
+        DrawText("YOU WIN!", 220, 550, 25, YELLOW);
+    }
+
+    DrawText(TextFormat("Mistakes: %d", game->mistakes), screenW - 150, 550, 15, WHITE);
+
+    EndDrawing();
+}
+
+// Handle user input
+void handleInput(GameState *game) {
+    // Mouse input - FIXED: Clamp values to valid grid range
+    if (IsMouseButtonPressed(MOUSE_LEFT_BUTTON)) {
+        Vector2 mousePos = GetMousePosition();
+        if (mousePos.y < 540) { // Only in grid area
+            int row = (int)(mousePos.y / cellSize);
+            int col = (int)(mousePos.x / cellSize);
+            
+            // Clamp to valid grid bounds (0-8)
+            if (row < 0) row = 0;
+            if (row > 8) row = 8;
+            if (col < 0) col = 0;
+            if (col > 8) col = 8;
+            
+            game->selectedRow = row;
+            game->selectedCol = col;
+        }
+    }
+
+    // Number input (1-9)
+    for (int num = 1; num <= 9; num++) {
+        if (IsKeyPressed(KEY_ZERO + num)) {
+            if (game->selectedRow >= 0 && game->selectedRow < 9 &&
+                game->selectedCol >= 0 && game->selectedCol < 9 &&
+                game->grid[game->selectedRow][game->selectedCol].original == 0) {
+                // Check if valid placement
+                if (isValidPlacement(game, game->selectedRow, game->selectedCol, num)) {
+                    game->grid[game->selectedRow][game->selectedCol].value = num;
+                }
+            }
+        }
+    }
+
+    // Delete/Backspace
+    if ((IsKeyPressed(KEY_BACKSPACE) || IsKeyPressed(KEY_DELETE)) &&
+        game->selectedRow >= 0 && game->selectedCol >= 0) {
+        if (game->grid[game->selectedRow][game->selectedCol].original == 0) {
+            game->grid[game->selectedRow][game->selectedCol].value = 0;
+        }
+    }
+
+    // Reset game (R)
+    if (IsKeyPressed(KEY_R)) {
+        for (int i = 0; i < 9; i++) {
+            for (int j = 0; j < 9; j++) {
+                if (game->grid[i][j].original == 0) {
+                    game->grid[i][j].value = 0;
+                }
+            }
+        }
+        game->mistakes = 0;
+        game->isWon = 0;
+    }
+
+    // New game (W)
+    if (IsKeyPressed(KEY_W)) {
+        initializeGame(game);
+    }
+
+    // Check for win
+    if (isBoardComplete(game)) {
+        game->isWon = 1;
+    }
+}
+
+int main(void) {
+    srand((unsigned int)time(NULL));
+
+    InitWindow(screenW, screenH, "Sudoku");
+    SetTargetFPS(60);
+
+    GameState game;
+    initializeGame(&game);
+
+    while (!WindowShouldClose()) {
+        handleInput(&game);
+        drawGame(&game);
+    }
+
+    CloseWindow();
+    return 0;
+}
