@@ -1,0 +1,84 @@
+const std = @import("std");
+
+const c = @cImport({
+    @cInclude("GLFW/glfw3.h");
+    @cInclude("GL/gl.h");
+});
+
+const Plane = struct {
+    x: f32 = 0,
+    y: f32 = 0,
+    z: f32 = -5,
+    yaw: f32 = 0,
+
+    pub fn forward(self: *Plane, speed: f32) void {
+        self.x += @cos(self.yaw) * speed;
+        self.z += @sin(self.yaw) * speed;
+    }
+
+    pub fn turn(self: *Plane, amount: f32) void {
+        self.yaw += amount;
+    }
+};
+
+pub fn main() !void {
+    if (c.glfwInit() == 0) {
+        std.debug.print("Failed to init GLFW\n", .{});
+        return;
+    }
+    defer c.glfwTerminate();
+
+    const window = c.glfwCreateWindow(800, 600, "Zig 3D Plane", null, null);
+    if (window == null) {
+        std.debug.print("Failed to create window\n", .{});
+        return;
+    }
+
+    c.glfwMakeContextCurrent(window);
+
+    var plane = Plane{};
+
+    while (c.glfwWindowShouldClose(window) == 0) {
+
+        // controls
+        if (c.glfwGetKey(window, c.GLFW_KEY_W) == c.GLFW_PRESS) {
+            plane.forward(0.05);
+        }
+
+        if (c.glfwGetKey(window, c.GLFW_KEY_A) == c.GLFW_PRESS) {
+            plane.turn(-0.03);
+        }
+
+        if (c.glfwGetKey(window, c.GLFW_KEY_D) == c.GLFW_PRESS) {
+            plane.turn(0.03);
+        }
+
+        // render
+        c.glClear(c.GL_COLOR_BUFFER_BIT | c.GL_DEPTH_BUFFER_BIT);
+
+        c.glLoadIdentity();
+
+        c.glTranslatef(-plane.x, -plane.y, plane.z);
+        c.glRotatef(plane.yaw * 57.3, 0, 1, 0);
+
+        drawPlane();
+
+        c.glfwSwapBuffers(window);
+        c.glfwPollEvents();
+    }
+}
+
+fn drawPlane() void {
+    c.glBegin(c.GL_TRIANGLES);
+
+    c.glColor3f(1, 0, 0);
+    c.glVertex3f(0, 0, 0);
+
+    c.glColor3f(0, 1, 0);
+    c.glVertex3f(-0.5, 0, -1);
+
+    c.glColor3f(0, 0, 1);
+    c.glVertex3f(0.5, 0, -1);
+
+    c.glEnd();
+}
